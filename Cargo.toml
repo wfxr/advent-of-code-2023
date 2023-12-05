@@ -3,3 +3,5 @@ name = "aoc2023"
 version = "0.1.0"
 authors = ["Wenxuan Zhang <wenxuangm@gmail.com>"]
 edition = "2021"
+
+[dependencies]
