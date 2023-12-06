@@ -13,6 +13,7 @@ mod testmacros;
 crate::aoc!(
     day01,
     day02,
+    day03,
 ); // +SOLUTIONS+
 
 pub type AocResult<T> = std::result::Result<T, Box<dyn std::error::Error>>;
