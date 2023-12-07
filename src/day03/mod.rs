@@ -19,20 +19,21 @@ impl<'a> Grid<'a> {
     fn new(input: &'a str) -> AocResult<Self> {
         let data = input.lines().map(|line| line.as_bytes()).collect::<Vec<_>>();
         let nrows = data.len();
-        let cols = data.first().ok_or("empty input")?.len();
+        let ncols = data.first().ok_or("empty input")?.len();
         for (i, row) in data.iter().enumerate() {
-            if row.len() != cols {
-                return Err(format!("rows have different lengths at row {}: {} != {}", i, row.len(), cols).into());
+            if row.len() != ncols {
+                return Err(format!("rows have different lengths at row {}: {} != {}", i, row.len(), ncols).into());
             }
         }
-        Ok(Self { data, nrows, ncols: cols })
+        Ok(Self { data, nrows, ncols })
+    }
+
+    fn get(&self, row: usize, col: usize) -> Option<u8> {
+        self.data.get(row).and_then(|row| row.get(col)).copied()
     }
 
     fn is_symbol(&self, row: usize, col: usize) -> bool {
-        match self.data.get(row).and_then(|row| row.get(col)) {
-            Some(c) => !c.is_ascii_digit() && c != &b'.',
-            None => false,
-        }
+        matches!(self.get(row, col), Some(c) if !c.is_ascii_digit() && c != b'.')
     }
 
     fn adjacent_to_symbol(&self, row: usize, col: usize) -> bool {
@@ -41,37 +42,31 @@ impl<'a> Grid<'a> {
     }
 
     fn num_at(&self, row: usize, col: usize) -> Option<(usize, usize)> {
-        if row >= self.nrows || col >= self.ncols || !self.data[row][col].is_ascii_digit() {
-            return None;
-        }
-
-        let num_start = match self.data[row][..col].iter().rev().position(|c| !c.is_ascii_digit()) {
-            Some(n) => col - n,
-            None => 0,
-        };
-
-        let num = self.data[row][num_start..]
-            .iter()
-            .take_while(|c| c.is_ascii_digit())
-            .fold(0, |acc, &c| acc * 10 + (c - b'0') as usize);
-
-        Some((row * self.ncols + num_start, num))
+        self.get(row, col).filter(u8::is_ascii_digit).map(|_| {
+            let col = match self.data[row][..col].iter().rev().position(|c| !c.is_ascii_digit()) {
+                Some(n) => col - n,
+                None => 0,
+            };
+            let num = self.data[row][col..]
+                .iter()
+                .take_while(|c| c.is_ascii_digit())
+                .fold(0, |acc, &c| acc * 10 + (c - b'0') as usize);
+            (row * self.ncols + col, num) // (position, number)
+        })
     }
 
     fn gear_ratio(&self, row: usize, col: usize) -> Option<usize> {
-        if row >= self.nrows || col >= self.ncols || self.data[row][col] != b'*' {
-            return None;
-        }
+        self.get(row, col).filter(|&c| c == b'*').and_then(|_| {
+            let nums: HashMap<_, _> = ADJS
+                .iter()
+                .filter_map(|&(i, j)| self.num_at(row.wrapping_add_signed(i), col.wrapping_add_signed(j)))
+                .collect();
 
-        let nums: HashMap<usize, usize> = ADJS
-            .iter()
-            .filter_map(|&(i, j)| self.num_at(row.wrapping_add_signed(i), col.wrapping_add_signed(j)))
-            .collect();
-
-        match nums.len() {
-            2 => Some(nums.values().product()),
-            _ => None,
-        }
+            match nums.len() {
+                2 => Some(nums.values().product()),
+                _ => None,
+            }
+        })
     }
 }
 
