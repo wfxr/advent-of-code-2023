@@ -9,7 +9,7 @@ struct Grid<'a> {
 }
 
 #[rustfmt::skip]
-const ADJS: [(isize, isize); 8] = [
+const ADJS: &[(isize, isize)] = &[
     (-1, -1), (-1, 0), (-1, 1),
     ( 0, -1),          ( 0, 1),
     ( 1, -1), ( 1, 0), ( 1, 1),
@@ -32,13 +32,17 @@ impl<'a> Grid<'a> {
         self.data.get(row).and_then(|row| row.get(col)).copied()
     }
 
+    fn adjacent(&self, row: usize, col: usize) -> impl Iterator<Item = (usize, usize)> {
+        ADJS.iter()
+            .map(move |&(i, j)| (row.wrapping_add_signed(i), col.wrapping_add_signed(j)))
+    }
+
     fn is_symbol(&self, row: usize, col: usize) -> bool {
         matches!(self.get(row, col), Some(c) if !c.is_ascii_digit() && c != b'.')
     }
 
     fn adjacent_to_symbol(&self, row: usize, col: usize) -> bool {
-        ADJS.iter()
-            .any(|&(i, j)| self.is_symbol(row.wrapping_add_signed(i), col.wrapping_add_signed(j)))
+        self.adjacent(row, col).any(|(i, j)| self.is_symbol(i, j))
     }
 
     fn num_at(&self, row: usize, col: usize) -> Option<(usize, usize)> {
@@ -57,11 +61,7 @@ impl<'a> Grid<'a> {
 
     fn gear_ratio(&self, row: usize, col: usize) -> Option<usize> {
         self.get(row, col).filter(|&c| c == b'*').and_then(|_| {
-            let nums: HashMap<_, _> = ADJS
-                .iter()
-                .filter_map(|&(i, j)| self.num_at(row.wrapping_add_signed(i), col.wrapping_add_signed(j)))
-                .collect();
-
+            let nums: HashMap<_, _> = self.adjacent(row, col).filter_map(|(i, j)| self.num_at(i, j)).collect();
             match nums.len() {
                 2 => Some(nums.values().product()),
                 _ => None,
