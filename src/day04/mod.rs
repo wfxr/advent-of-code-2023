@@ -3,37 +3,44 @@ use std::collections::HashSet;
 use crate::{solution, AocResult};
 
 fn part1(input: &str) -> AocResult<usize> {
-    input
-        .lines()
-        .map(|line| {
-            let mut parts = line.split(|c| c == ':' || c == '|').skip(1);
-            match (parts.next(), parts.next(), parts.next()) {
-                (Some(wins), Some(mine), None) => {
-                    let wins: HashSet<usize> = wins
-                        .split_ascii_whitespace()
-                        .map(|n| n.parse::<usize>())
-                        .collect::<Result<_, _>>()?;
-                    mine.split_ascii_whitespace()
-                        .map(|n| n.parse::<usize>())
-                        .try_fold(1usize, |mut acc, num| {
-                            if wins.contains(&num?) {
-                                acc *= 2;
-                            }
-                            Ok(acc)
-                        })
-                        .map(|n| n / 2)
-                }
-                _ => Err(format!("Invalid input: {}", line).into()),
-            }
-        })
+    my_won(input)
+        .filter(|n| matches!(n, Ok(n) if *n > 0))
+        .map(|n| n.map(|n| 2usize.pow(n - 1)))
         .sum()
 }
 
-fn part2(_input: &str) -> AocResult<usize> {
-    todo!()
+fn part2(input: &str) -> AocResult<usize> {
+    let w: Vec<_> = my_won(input).collect::<Result<_, _>>()?;
+    let mut cards = vec![1usize; w.len()];
+
+    for i in 0..w.len() {
+        for j in 1..=w[i] {
+            cards[i + j as usize] += cards[i];
+        }
+    }
+
+    Ok(cards.into_iter().sum::<usize>())
 }
 
-solution!(part1 => 23235, part2 => todo!());
+fn my_won(input: &str) -> impl Iterator<Item = AocResult<u32>> + '_ {
+    input.lines().map(|line| {
+        let mut parts = line.split(|c| c == ':' || c == '|').skip(1);
+        match (parts.next(), parts.next(), parts.next()) {
+            (Some(wins), Some(mine), None) => {
+                let wins: HashSet<usize> = wins
+                    .split_ascii_whitespace()
+                    .map(|n| n.parse::<usize>())
+                    .collect::<Result<_, _>>()?;
+                mine.split_ascii_whitespace()
+                    .map(|n| n.parse::<usize>())
+                    .try_fold(0, |acc, num| Ok(acc + wins.contains(&num?) as u32))
+            }
+            _ => Err(format!("Invalid input: {}", line).into()),
+        }
+    })
+}
+
+solution!(part1 => 23235, part2 => 5920640);
 
 #[cfg(test)]
 mod tests {
@@ -47,5 +54,5 @@ Card 6: 31 18 13 56 72 | 74 77 10 23 35 67 36 11
 ";
 
     crate::test!(part1, t1: EXAMPLE.trim() => 13);
-    crate::test!(part2, t1: "" => 42);
+    crate::test!(part2, t1: EXAMPLE.trim() => 30);
 }
