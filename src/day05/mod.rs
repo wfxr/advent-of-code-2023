@@ -26,6 +26,20 @@ impl Map {
     }
 }
 
+struct MapChain {
+    maps: Vec<Map>,
+}
+
+impl MapChain {
+    fn push(&mut self, map: Map) {
+        self.maps.push(map);
+    }
+
+    fn get(&self, i: usize) -> usize {
+        self.maps.iter().fold(i, |i, map| map.get(i))
+    }
+}
+
 fn part1(input: &str) -> AocResult<usize> {
     let mut parts = input.split("\n\n");
 
@@ -37,76 +51,30 @@ fn part1(input: &str) -> AocResult<usize> {
         _ => return Err("invalid input".into()),
     };
 
-    let mut seed_to_soil = None;
-    let mut soil_to_fertilizer = None;
-    let mut fertilizer_to_water = None;
-    let mut water_to_light = None;
-    let mut light_to_temperature = None;
-    let mut temperature_to_humidity = None;
-    let mut humidity_to_location = None;
-
-    for part in parts {
+    let map_chain = parts.try_fold(MapChain { maps: Vec::new() }, |mut map_chain, part| -> AocResult<_> {
         let lines = &mut part.lines();
-
-        let build_map = |lines: &mut std::str::Lines<'_>| -> AocResult<Map> {
-            let entries = lines
-                .map(|line| {
-                    let mut parts = line.split_ascii_whitespace();
-                    match (parts.next(), parts.next(), parts.next(), parts.next()) {
-                        (Some(dst), Some(src), Some(len), None) =>
-                            Ok(MapEntry::new(src.parse()?, dst.parse()?, len.parse()?)),
-                        _ => Err(format!("invalid line: {}", line).into()),
-                    }
-                })
-                .collect::<AocResult<_>>()?;
-            Ok(Map { entries })
-        };
-
         match lines.next() {
-            Some(line) if line.starts_with("seed-to-soil map:") => {
-                seed_to_soil = Some(build_map(lines)?);
+            Some(line) if line.ends_with("map:") => {
+                let entries = lines
+                    .map(|line| {
+                        let mut parts = line.split_ascii_whitespace();
+                        match (parts.next(), parts.next(), parts.next(), parts.next()) {
+                            (Some(dst), Some(src), Some(len), None) =>
+                                Ok(MapEntry::new(src.parse()?, dst.parse()?, len.parse()?)),
+                            _ => Err(format!("invalid line: {}", line))?,
+                        }
+                    })
+                    .collect::<AocResult<_>>()?;
+                map_chain.push(Map { entries });
+                Ok(map_chain)
             }
-            Some(line) if line.starts_with("soil-to-fertilizer map:") => {
-                soil_to_fertilizer = Some(build_map(lines)?);
-            }
-            Some(line) if line.starts_with("fertilizer-to-water map:") => {
-                fertilizer_to_water = Some(build_map(lines)?);
-            }
-            Some(line) if line.starts_with("water-to-light map:") => {
-                water_to_light = Some(build_map(lines)?);
-            }
-            Some(line) if line.starts_with("light-to-temperature map:") => {
-                light_to_temperature = Some(build_map(lines)?);
-            }
-            Some(line) if line.starts_with("temperature-to-humidity map:") => {
-                temperature_to_humidity = Some(build_map(lines)?);
-            }
-            Some(line) if line.starts_with("humidity-to-location map:") => {
-                humidity_to_location = Some(build_map(lines)?);
-            }
-            _ => return Err(format!("invalid part: {}", part).into()),
+            _ => Err(format!("invalid part: {}", part))?,
         }
-    }
-
-    let soil_map = seed_to_soil.ok_or("missing seed-to-soil map")?;
-    let soil_to_fertilizer = soil_to_fertilizer.ok_or("missing soil-to-fertilizer map")?;
-    let fertilizer_to_water = fertilizer_to_water.ok_or("missing fertilizer-to-water map")?;
-    let water_to_light = water_to_light.ok_or("missing water-to-light map")?;
-    let light_to_temperature = light_to_temperature.ok_or("missing light-to-temperature map")?;
-    let temperature_to_humidity = temperature_to_humidity.ok_or("missing temperature-to-humidity map")?;
-    let humidity_to_location = humidity_to_location.ok_or("missing humidity-to-location map")?;
+    })?;
 
     seeds
         .iter()
-        .map(|&seed| {
-            let soil = dbg!(soil_map.get(seed));
-            let fertilizer = dbg!(soil_to_fertilizer.get(soil));
-            let water = dbg!(fertilizer_to_water.get(fertilizer));
-            let light = dbg!(water_to_light.get(water));
-            let temperature = dbg!(light_to_temperature.get(light));
-            let humidity = dbg!(temperature_to_humidity.get(temperature));
-            humidity_to_location.get(humidity)
-        })
+        .map(|&seed| map_chain.get(seed))
         .min()
         .ok_or("no solution".into())
 }
