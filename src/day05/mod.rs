@@ -13,6 +13,7 @@ impl MapEntry {
         Self { range: src..src + len, delta: dst as isize - src as isize }
     }
 
+    // TODO: remove this
     fn mapped(&self, key: usize) -> Option<usize> {
         self.range.contains(&key).then(|| key.wrapping_add_signed(self.delta))
     }
@@ -92,10 +93,6 @@ struct MapChain {
 }
 
 impl MapChain {
-    fn push(&mut self, map: Map) {
-        self.maps.push(map);
-    }
-
     fn mapped(&self, key: usize) -> usize {
         self.maps.iter().fold(key, |key, map| map.mapped(key))
     }
@@ -107,86 +104,61 @@ impl MapChain {
     }
 }
 
-fn part1(input: &str) -> AocResult<usize> {
-    let mut parts = input.split("\n\n");
-
-    let seeds: Vec<usize> = match parts.next() {
-        Some(line) if line.starts_with("seeds:") => line[6..]
-            .split_ascii_whitespace()
-            .map(|s| s.parse())
-            .collect::<Result<_, _>>()?,
-        _ => return Err("invalid input".into()),
-    };
-
-    let map_chain = parts.try_fold(MapChain { maps: Vec::new() }, |mut map_chain, part| -> AocResult<_> {
-        let lines = &mut part.lines();
-        match lines.next() {
-            Some(line) if line.ends_with("map:") => {
-                let entries = lines
-                    .map(|line| {
-                        let mut parts = line.split_ascii_whitespace();
-                        match (parts.next(), parts.next(), parts.next(), parts.next()) {
-                            (Some(dst), Some(src), Some(len), None) =>
-                                Ok(MapEntry::new(src.parse()?, dst.parse()?, len.parse()?)),
-                            _ => Err(format!("invalid line: {}", line))?,
-                        }
-                    })
-                    .collect::<AocResult<_>>()?;
-                map_chain.push(Map::new(entries));
-                Ok(map_chain)
+fn parse_map_chain(input: &str) -> AocResult<MapChain> {
+    input
+        .split("\n\n")
+        .try_fold(MapChain { maps: Vec::new() }, |mut map_chain, part| -> AocResult<_> {
+            let lines = &mut part.lines();
+            match lines.next() {
+                Some(line) if line.ends_with("map:") => {
+                    let entries = lines
+                        .map(|line| {
+                            let mut parts = line.split_ascii_whitespace();
+                            match (parts.next(), parts.next(), parts.next(), parts.next()) {
+                                (Some(dst), Some(src), Some(len), None) =>
+                                    Ok(MapEntry::new(src.parse()?, dst.parse()?, len.parse()?)),
+                                _ => Err(format!("invalid line: {}", line))?,
+                            }
+                        })
+                        .collect::<AocResult<_>>()?;
+                    map_chain.maps.push(Map::new(entries));
+                    Ok(map_chain)
+                }
+                _ => Err(format!("invalid part: {}", part))?,
             }
-            _ => Err(format!("invalid part: {}", part))?,
-        }
-    })?;
+        })
+}
 
-    seeds
-        .iter()
-        .map(|&seed| map_chain.mapped(seed))
-        .min()
-        .ok_or("no solution".into())
+fn parse_seeds(input: &str) -> AocResult<impl Iterator<Item = Result<usize, std::num::ParseIntError>> + '_> {
+    match input.strip_prefix("seeds:") {
+        Some(seeds) => Ok(seeds.split_ascii_whitespace().map(|s| s.parse())),
+        None => Err(format!("invalid seeds: {}", input))?,
+    }
+}
+
+fn part1(input: &str) -> AocResult<usize> {
+    let (seeds, map_chain) = input.split_once("\n\n").ok_or("invalid input")?;
+    let map_chain = parse_map_chain(map_chain)?;
+
+    let mut min_loc = usize::MAX;
+    for seed in parse_seeds(seeds)? {
+        min_loc = min_loc.min(map_chain.mapped(seed?));
+    }
+    Ok(min_loc)
 }
 
 fn part2(input: &str) -> AocResult<usize> {
-    let mut parts = input.split("\n\n");
+    let (seeds, map_chain) = input.split_once("\n\n").ok_or("invalid input")?;
+    let map_chain = parse_map_chain(map_chain)?;
 
-    let seeds: Vec<_> = match parts.next() {
-        Some(line) if line.starts_with("seeds:") => line[6..]
-            .split_ascii_whitespace()
-            .map(|s| s.parse())
-            .array_chunks()
-            .map(|[start, count]| start.and_then(|start| count.map(|count| start..start + count)))
-            .collect::<Result<_, _>>()?,
-        _ => return Err("invalid input".into()),
-    };
-
-    let map_chain = parts.try_fold(MapChain { maps: Vec::new() }, |mut map_chain, part| -> AocResult<_> {
-        let lines = &mut part.lines();
-        match lines.next() {
-            Some(line) if line.ends_with("map:") => {
-                let entries = lines
-                    .map(|line| {
-                        let mut parts = line.split_ascii_whitespace();
-                        match (parts.next(), parts.next(), parts.next(), parts.next()) {
-                            (Some(dst), Some(src), Some(len), None) =>
-                                Ok(MapEntry::new(src.parse()?, dst.parse()?, len.parse()?)),
-                            _ => Err(format!("invalid line: {}", line))?,
-                        }
-                    })
-                    .collect::<AocResult<_>>()?;
-                map_chain.push(Map::new(entries));
-                Ok(map_chain)
-            }
-            _ => Err(format!("invalid part: {}", part))?,
+    let mut min_loc = usize::MAX;
+    for [start, count] in parse_seeds(seeds)?.array_chunks() {
+        let (start, count) = (start?, count?);
+        for range in map_chain.mapped_ranges(start..start + count) {
+            min_loc = min_loc.min(range.start);
         }
-    })?;
-
-    seeds
-        .into_iter()
-        .flat_map(|seed| map_chain.mapped_ranges(seed))
-        .inspect(|range| println!("{:?}", range))
-        .min_by(|a, b| a.start.cmp(&b.start))
-        .map(|range| range.start)
-        .ok_or("no solution".into())
+    }
+    Ok(min_loc)
 }
 
 solution!(part1 => 535088217, part2 => 51399228);
