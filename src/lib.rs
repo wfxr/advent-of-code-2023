@@ -1,6 +1,7 @@
 #![feature(iter_intersperse)]
 #![feature(array_windows)]
 #![feature(extract_if)]
+#![feature(iter_array_chunks)]
 #![feature(test)]
 #![allow(clippy::get_first)]
 extern crate test;

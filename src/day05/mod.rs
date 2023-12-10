@@ -1,7 +1,8 @@
-use std::ops::Range;
+use std::{cmp::Ordering, ops::Range};
 
 use crate::{solution, AocResult};
 
+#[derive(Debug)]
 struct MapEntry {
     range: Range<usize>,
     delta: isize,
@@ -11,8 +12,9 @@ impl MapEntry {
     fn new(src: usize, dst: usize, len: usize) -> Self {
         Self { range: src..src + len, delta: dst as isize - src as isize }
     }
-    fn get(&self, i: usize) -> Option<usize> {
-        self.range.contains(&i).then(|| i.wrapping_add_signed(self.delta))
+
+    fn mapped(&self, key: usize) -> Option<usize> {
+        self.range.contains(&key).then(|| key.wrapping_add_signed(self.delta))
     }
 }
 
@@ -21,8 +23,67 @@ struct Map {
 }
 
 impl Map {
-    fn get(&self, i: usize) -> usize {
-        self.entries.iter().find_map(|e| e.get(i)).unwrap_or(i)
+    fn new(mut entries: Vec<MapEntry>) -> Self {
+        entries.sort_unstable_by_key(|e| e.range.start);
+        Self { entries }
+    }
+
+    fn mapped(&self, key: usize) -> usize {
+        self.entries
+            .binary_search_by(|MapEntry { range: Range { start, end }, .. }| match key {
+                k if start > &k => Ordering::Greater,
+                k if end <= &k => Ordering::Less,
+                _ => Ordering::Equal,
+            })
+            .ok()
+            .and_then(|i| self.entries[i].mapped(key))
+            .unwrap_or(key)
+    }
+
+    fn mapped_ranges(&self, keys: Range<usize>) -> Vec<Range<usize>> {
+        let (mut kstart, kend) = (keys.start, keys.end);
+        let mut ranges = Vec::new();
+
+        let mut i = match self
+            .entries
+            .binary_search_by(|MapEntry { range: Range { start, end }, .. }| match kstart {
+                kstart if start > &kstart => Ordering::Greater,
+                kstart if end <= &kstart => Ordering::Less,
+                _ => Ordering::Equal,
+            }) {
+            Ok(i) => i,
+            Err(i) => match self.entries.get(i) {
+                Some(entry) => {
+                    let len = (entry.range.start).min(kend) - kstart;
+                    ranges.push(kstart..kstart + len);
+                    kstart += len;
+                    i
+                }
+                None => {
+                    ranges.push(kstart..kend);
+                    return ranges;
+                }
+            },
+        };
+
+        while i < self.entries.len() && kstart < kend {
+            let entry = &self.entries[i];
+            let vstart = entry.mapped(kstart).expect("invalid state");
+            let len = (entry.range.end).min(kend) - kstart;
+            ranges.push(vstart..vstart + len);
+            kstart += len;
+
+            i += 1;
+
+            let len = match self.entries.get(i) {
+                Some(entry) => (entry.range.start).min(kend) - kstart,
+                None => kend - kstart,
+            };
+            ranges.push(kstart..kstart + len);
+            kstart += len;
+        }
+
+        ranges.into_iter().filter(|range| !range.is_empty()).collect()
     }
 }
 
@@ -35,8 +96,14 @@ impl MapChain {
         self.maps.push(map);
     }
 
-    fn get(&self, i: usize) -> usize {
-        self.maps.iter().fold(i, |i, map| map.get(i))
+    fn mapped(&self, key: usize) -> usize {
+        self.maps.iter().fold(key, |key, map| map.mapped(key))
+    }
+
+    fn mapped_ranges(&self, range: Range<usize>) -> Vec<Range<usize>> {
+        self.maps.iter().fold(vec![range], |ranges, map| {
+            ranges.into_iter().flat_map(|range| map.mapped_ranges(range)).collect()
+        })
     }
 }
 
@@ -65,7 +132,7 @@ fn part1(input: &str) -> AocResult<usize> {
                         }
                     })
                     .collect::<AocResult<_>>()?;
-                map_chain.push(Map { entries });
+                map_chain.push(Map::new(entries));
                 Ok(map_chain)
             }
             _ => Err(format!("invalid part: {}", part))?,
@@ -74,16 +141,55 @@ fn part1(input: &str) -> AocResult<usize> {
 
     seeds
         .iter()
-        .map(|&seed| map_chain.get(seed))
+        .map(|&seed| map_chain.mapped(seed))
         .min()
         .ok_or("no solution".into())
 }
 
-fn part2(_input: &str) -> AocResult<usize> {
-    todo!()
+fn part2(input: &str) -> AocResult<usize> {
+    let mut parts = input.split("\n\n");
+
+    let seeds: Vec<_> = match parts.next() {
+        Some(line) if line.starts_with("seeds:") => line[6..]
+            .split_ascii_whitespace()
+            .map(|s| s.parse())
+            .array_chunks()
+            .map(|[start, count]| start.and_then(|start| count.map(|count| start..start + count)))
+            .collect::<Result<_, _>>()?,
+        _ => return Err("invalid input".into()),
+    };
+
+    let map_chain = parts.try_fold(MapChain { maps: Vec::new() }, |mut map_chain, part| -> AocResult<_> {
+        let lines = &mut part.lines();
+        match lines.next() {
+            Some(line) if line.ends_with("map:") => {
+                let entries = lines
+                    .map(|line| {
+                        let mut parts = line.split_ascii_whitespace();
+                        match (parts.next(), parts.next(), parts.next(), parts.next()) {
+                            (Some(dst), Some(src), Some(len), None) =>
+                                Ok(MapEntry::new(src.parse()?, dst.parse()?, len.parse()?)),
+                            _ => Err(format!("invalid line: {}", line))?,
+                        }
+                    })
+                    .collect::<AocResult<_>>()?;
+                map_chain.push(Map::new(entries));
+                Ok(map_chain)
+            }
+            _ => Err(format!("invalid part: {}", part))?,
+        }
+    })?;
+
+    seeds
+        .into_iter()
+        .flat_map(|seed| map_chain.mapped_ranges(seed))
+        .inspect(|range| println!("{:?}", range))
+        .min_by(|a, b| a.start.cmp(&b.start))
+        .map(|range| range.start)
+        .ok_or("no solution".into())
 }
 
-solution!(part1 => 535088217, part2 => todo!());
+solution!(part1 => 535088217, part2 => 51399228);
 
 #[cfg(test)]
 mod tests {
@@ -124,5 +230,5 @@ humidity-to-location map:
 ";
 
     crate::test!(part1, t1: EXAMPLE.trim() => 35);
-    crate::test!(part2, t1: EXAMPLE.trim() => 42);
+    crate::test!(part2, t1: EXAMPLE.trim() => 46);
 }
