@@ -1,95 +1,9 @@
+use std::cmp::Reverse;
+
 use crate::{solution, AocResult};
 
-#[derive(Debug, Copy, Clone, PartialEq, Eq, PartialOrd, Ord)]
-struct Hand {
-    kind:  HandKind,
-    cards: [u8; 5],
-}
-
-#[derive(Debug, Copy, Clone, PartialEq, Eq, PartialOrd, Ord)]
-enum HandKind {
-    HighCard,
-    OnePair,
-    TwoPair,
-    ThreeOfAKind,
-    FullHouse,
-    FourOfAKind,
-    FiveOfAKind,
-}
-
-impl Hand {
-    fn new(cards: [u8; 5]) -> Self {
-        let mut counts = [0; 15];
-        for &card in &cards {
-            counts[card as usize] += 1;
-        }
-
-        let mut kind = HandKind::HighCard;
-        for &count in counts.iter().skip(1) {
-            match count {
-                5 => {
-                    kind = HandKind::FiveOfAKind;
-                    break;
-                }
-                4 => {
-                    kind = HandKind::FourOfAKind;
-                    break;
-                }
-                3 => match kind {
-                    HandKind::OnePair => {
-                        kind = HandKind::FullHouse;
-                        break;
-                    }
-                    _ => kind = HandKind::ThreeOfAKind,
-                },
-                2 => match kind {
-                    HandKind::OnePair => {
-                        kind = HandKind::TwoPair;
-                        break;
-                    }
-                    HandKind::ThreeOfAKind => {
-                        kind = HandKind::FullHouse;
-                        break;
-                    }
-                    _ => kind = HandKind::OnePair,
-                },
-                _ => {}
-            }
-        }
-
-        match counts[0] {
-            0 => {}
-            1 => match kind {
-                HandKind::HighCard => kind = HandKind::OnePair,
-                HandKind::OnePair => kind = HandKind::ThreeOfAKind,
-                HandKind::TwoPair => kind = HandKind::FullHouse,
-                HandKind::ThreeOfAKind => kind = HandKind::FourOfAKind,
-                HandKind::FourOfAKind => kind = HandKind::FiveOfAKind,
-                _ => {}
-            },
-            2 => match kind {
-                HandKind::HighCard => kind = HandKind::ThreeOfAKind,
-                HandKind::OnePair => kind = HandKind::FourOfAKind,
-                HandKind::ThreeOfAKind => kind = HandKind::FiveOfAKind,
-                _ => {}
-            },
-            3 => match kind {
-                HandKind::HighCard => kind = HandKind::FourOfAKind,
-                HandKind::OnePair => kind = HandKind::FiveOfAKind,
-                _ => {}
-            },
-            4 | 5 => {
-                kind = HandKind::FiveOfAKind;
-            }
-            _ => {}
-        }
-
-        Self { cards, kind }
-    }
-}
-
 #[rustfmt::skip]
-fn parse_hand(s: &str, jocker: bool) -> AocResult<Hand> {
+fn compute_rank(s: &str, jocker: bool) -> AocResult<u32> {
     let mut cards = [0; 5];
     for (i, c) in s.chars().enumerate() {
         cards[i] = match c {
@@ -102,7 +16,22 @@ fn parse_hand(s: &str, jocker: bool) -> AocResult<Hand> {
             _ => return Err(format!("Invalid card: {}", c).into()),
         };
     }
-    Ok(Hand::new(cards))
+    Ok(cards_rank(&cards))
+}
+
+fn cards_rank(cards: &[u8; 5]) -> u32 {
+    let mut rank = 0;
+    let mut counts = [0; 15];
+    for &card in cards {
+        counts[card as usize] += 1;
+        rank = rank * 15 + card as u32;
+    }
+
+    counts[1..].sort_unstable_by_key(|&c| Reverse(c));
+    let [jokers, first, second, ..] = counts;
+
+    let kind = (jokers + first) * 5 + second;
+    kind * 15u32.pow(5) + rank
 }
 
 fn solve(input: &str, jocker: bool) -> AocResult<usize> {
@@ -111,12 +40,12 @@ fn solve(input: &str, jocker: bool) -> AocResult<usize> {
         .map(|line| {
             let (hand, bid) = line.split_once(' ').ok_or(format!("Invalid hand: {}", line))?;
             let bid: usize = bid.parse().map_err(|e| format!("Invalid bid: {}", e))?;
-            let hand: Hand = parse_hand(hand, jocker)?;
-            Ok((hand, bid))
+            let rank = compute_rank(hand, jocker)?;
+            Ok((rank, bid))
         })
         .collect::<AocResult<_>>()?;
     hands.sort_unstable();
-    Ok(hands.into_iter().enumerate().map(|(i, (_, bid))| bid * (i + 1)).sum())
+    Ok(hands.into_iter().zip(1..).map(|((_, bid), i)| bid * i).sum())
 }
 
 fn part1(input: &str) -> AocResult<usize> {
