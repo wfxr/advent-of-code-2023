@@ -38,7 +38,7 @@ fn solve(input: &str, jocker: bool) -> AocResult<usize> {
     let mut hands: Vec<_> = input
         .lines()
         .map(|line| {
-            let (hand, bid) = line.split_once(' ').ok_or(format!("Invalid hand: {}", line))?;
+            let (hand, bid) = line.split_once(' ').ok_or_else(|| format!("Invalid hand: {}", line))?;
             let bid: usize = bid.parse().map_err(|e| format!("Invalid bid: {}", e))?;
             let rank = compute_rank(hand, jocker)?;
             Ok((rank, bid))
