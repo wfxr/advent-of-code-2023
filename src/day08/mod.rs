@@ -2,14 +2,16 @@ use std::collections::HashMap;
 
 use crate::{solution, AocResult};
 
-fn name_to_id(name: &str) -> usize {
-    name.bytes().fold(0, |acc, c| acc * 26 + (c - b'A') as usize)
+fn name_to_id(name: &str) -> u32 {
+    name.bytes().fold(0, |acc, c| acc * 26 + (c - b'A') as u32)
 }
 
-fn part1(input: &str) -> AocResult<usize> {
+type Network = HashMap<u32, (u32, u32)>;
+
+fn parse_input(input: &str) -> AocResult<(&str, Network)> {
     let (dirs, nodes) = input.split_once("\n\n").ok_or("invalid input")?;
 
-    let network: HashMap<_, _> = nodes
+    let network: Network = nodes
         .lines()
         .map(|line| {
             let mut it = line
@@ -22,11 +24,16 @@ fn part1(input: &str) -> AocResult<usize> {
             }
         })
         .collect::<Result<_, _>>()?;
+    Ok((dirs, network))
+}
+
+fn part1(input: &str) -> AocResult<usize> {
+    let (dirs, network) = parse_input(input)?;
 
     let dest = name_to_id("ZZZ");
     let mut curr = name_to_id("AAA");
 
-    for (i, dir) in dirs.chars().cycle().enumerate() {
+    for (dir, i) in dirs.chars().cycle().zip(1..) {
         let (left, right) = network[&curr];
         curr = match dir {
             'L' => left,
@@ -35,18 +42,50 @@ fn part1(input: &str) -> AocResult<usize> {
         };
 
         if curr == dest {
-            return Ok(i + 1);
+            return Ok(i);
         }
     }
 
     unreachable!()
 }
 
-fn part2(_input: &str) -> AocResult<usize> {
-    todo!()
+fn part2(input: &str) -> AocResult<usize> {
+    let (dirs, network) = parse_input(input)?;
+
+    let mut currs: Vec<_> = network.keys().copied().filter(|&id| id % 26 == 0).collect();
+    let mut steps = Vec::with_capacity(currs.len());
+
+    for curr in currs.iter_mut() {
+        for (dir, i) in dirs.chars().cycle().zip(1..) {
+            let (left, right) = network[curr];
+            *curr = match dir {
+                'L' => left,
+                'R' => right,
+                _ => return Err(format!("invalid direction: {}", dir).into()),
+            };
+
+            if *curr % 26 == 25 {
+                steps.push(i);
+                break;
+            }
+        }
+    }
+
+    Ok(lcm(&steps))
 }
 
-solution!(part1 => todo!(), part2 => todo!());
+fn lcm(s: &[usize]) -> usize {
+    s.iter().fold(1, |lcm, &x| lcm * x / gcd(lcm, x))
+}
+
+fn gcd(mut a: usize, mut b: usize) -> usize {
+    while b != 0 {
+        (b, a) = (a % b, b);
+    }
+    a
+}
+
+solution!(part1 => 21251, part2 => 11678319315857);
 
 #[cfg(test)]
 mod tests {
@@ -70,10 +109,22 @@ BBB = (AAA, ZZZ)
 ZZZ = (ZZZ, ZZZ)
 ";
 
+    const EXAMPLE3: &str = "
+LR
+
+AAA = (AAB, XXX)
+AAB = (XXX, AAZ)
+AAZ = (AAB, XXX)
+BBA = (BBB, XXX)
+BBB = (BBC, BBC)
+BBC = (BBZ, BBZ)
+BBZ = (BBB, BBB)
+XXX = (XXX, XXX)
+";
     crate::test!(part1,
         t1: EXAMPLE1.trim() => 2,
         t2: EXAMPLE2.trim() => 6,
     );
 
-    crate::test!(part2, t1: EXAMPLE1.trim() => todo!());
+    crate::test!(part2, t1: EXAMPLE3.trim() => 6);
 }
