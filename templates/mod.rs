@@ -12,8 +12,9 @@ solution!(part1 => todo!(), part2 => todo!());
 
 #[cfg(test)]
 mod tests {
-    const EXAMPLE: &str = "";
+    const EXAMPLE: &str = indoc::indoc! {"
+    "};
 
-    crate::test!(part1, t1: EXAMPLE.trim() => todo!());
-    crate::test!(part2, t1: EXAMPLE.trim() => todo!());
+    crate::test!(part1, t1: EXAMPLE => todo!());
+    crate::test!(part2, t1: EXAMPLE => todo!());
 }

@@ -60,11 +60,11 @@ solution!(part1 => 449550, part2 => 28360140);
 
 #[cfg(test)]
 mod tests {
-    const EXAMPLE: &str = "
-Time:      7  15   30
-Distance:  9  40  200
-";
+    const EXAMPLE: &str = indoc::indoc! {"
+        Time:      7  15   30
+        Distance:  9  40  200
+    "};
 
-    crate::test!(part1, t1: EXAMPLE.trim() => 288);
-    crate::test!(part2, t1: EXAMPLE.trim() => 71503);
+    crate::test!(part1, t1: EXAMPLE => 288);
+    crate::test!(part2, t1: EXAMPLE => 71503);
 }

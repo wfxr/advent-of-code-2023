@@ -113,20 +113,19 @@ solution!(part1 => 529618, part2 => 77509019);
 
 #[cfg(test)]
 mod tests {
-    const EXAMPLE: &str = "
-467..114..
-...*......
-..35..633.
-......#...
-617*......
-.....+.58.
-..592.....
-......755.
-...$.*....
-.664.598..
-";
+    const EXAMPLE: &str = indoc::indoc! {"
+        467..114..
+        ...*......
+        ..35..633.
+        ......#...
+        617*......
+        .....+.58.
+        ..592.....
+        ......755.
+        ...$.*....
+        .664.598..
+    "};
 
-    crate::test!(part1, t1: EXAMPLE.trim() => 4361);
-
-    crate::test!(part2, t1: EXAMPLE.trim() => 467835);
+    crate::test!(part1, t1: EXAMPLE => 4361);
+    crate::test!(part2, t1: EXAMPLE => 467835);
 }

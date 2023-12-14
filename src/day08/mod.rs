@@ -88,42 +88,39 @@ solution!(part1 => 21251, part2 => 11678319315857);
 
 #[cfg(test)]
 mod tests {
-    const EXAMPLE1: &str = "
-RL
-
-AAA = (BBB, CCC)
-BBB = (DDD, EEE)
-CCC = (ZZZ, GGG)
-DDD = (DDD, DDD)
-EEE = (EEE, EEE)
-GGG = (GGG, GGG)
-ZZZ = (ZZZ, ZZZ)
-";
-
-    const EXAMPLE2: &str = "
-LLR
-
-AAA = (BBB, BBB)
-BBB = (AAA, ZZZ)
-ZZZ = (ZZZ, ZZZ)
-";
-
-    const EXAMPLE3: &str = "
-LR
-
-AAA = (AAB, XXX)
-AAB = (XXX, AAZ)
-AAZ = (AAB, XXX)
-BBA = (BBB, XXX)
-BBB = (BBC, BBC)
-BBC = (BBZ, BBZ)
-BBZ = (BBB, BBB)
-XXX = (XXX, XXX)
-";
     crate::test!(part1,
-        t1: EXAMPLE1.trim() => 2,
-        t2: EXAMPLE2.trim() => 6,
+        t1: indoc::indoc! {"
+            RL
+
+            AAA = (BBB, CCC)
+            BBB = (DDD, EEE)
+            CCC = (ZZZ, GGG)
+            DDD = (DDD, DDD)
+            EEE = (EEE, EEE)
+            GGG = (GGG, GGG)
+            ZZZ = (ZZZ, ZZZ)
+        "} => 2,
+        t2: indoc::indoc! {"
+            LLR
+
+            AAA = (BBB, BBB)
+            BBB = (AAA, ZZZ)
+            ZZZ = (ZZZ, ZZZ)
+        "} => 6,
     );
 
-    crate::test!(part2, t1: EXAMPLE3.trim() => 6);
+    crate::test!(part2,
+        t1: indoc::indoc!{"
+            LR
+
+            AAA = (AAB, XXX)
+            AAB = (XXX, AAZ)
+            AAZ = (AAB, XXX)
+            BBA = (BBB, XXX)
+            BBB = (BBC, BBC)
+            BBC = (BBZ, BBZ)
+            BBZ = (BBB, BBB)
+            XXX = (XXX, XXX)
+        "} => 6
+    );
 }

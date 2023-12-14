@@ -59,25 +59,26 @@ solution!(part1 => 54331, part2 => 54518);
 #[cfg(test)]
 mod tests {
     crate::test!(part1,
-    t1: "
-        1abc2
-        pqr3stu8vwx
-        a1b2c3d4e5f
-        treb7uchet
-    ".trim() => 142);
+        t1: indoc::indoc! {"
+            1abc2
+            pqr3stu8vwx
+            a1b2c3d4e5f
+            treb7uchet
+        "} => 142,
+    );
 
     crate::test!(part2,
-    t1: "oxonetwo1nine" => 19,
-    t2: "jrvcznlvfgntthree5fivejqrheightwoxkh" => 32,
-    t3: "tthree5five2" => 32,
-    t4: "
-        two1nine
-        eightwothree
-        abcone2threexyz
-        xtwone3four
-        4nineeightseven2
-        zoneight234
-        7pqrstsixteen
-    ".trim() => 281,
+        t1: "oxonetwo1nine" => 19,
+        t2: "jrvcznlvfgntthree5fivejqrheightwoxkh" => 32,
+        t3: "tthree5five2" => 32,
+        t4: indoc::indoc! {"
+            two1nine
+            eightwothree
+            abcone2threexyz
+            xtwone3four
+            4nineeightseven2
+            zoneight234
+            7pqrstsixteen
+        "} => 281,
     );
 }

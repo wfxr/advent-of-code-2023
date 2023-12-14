@@ -59,14 +59,14 @@ solution!(part1 => 251927063, part2 => 255632664);
 
 #[cfg(test)]
 mod tests {
-    const EXAMPLE: &str = "
-32T3K 765
-T55J5 684
-KK677 28
-KTJJT 220
-QQQJA 483
-";
+    const EXAMPLE: &str = indoc::indoc! {"
+        32T3K 765
+        T55J5 684
+        KK677 28
+        KTJJT 220
+        QQQJA 483
+    "};
 
-    crate::test!(part1, t1: EXAMPLE.trim() => 6440);
-    crate::test!(part2, t1: EXAMPLE.trim() => 5905);
+    crate::test!(part1, t1: EXAMPLE => 6440);
+    crate::test!(part2, t1: EXAMPLE => 5905);
 }
