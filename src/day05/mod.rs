@@ -1,5 +1,4 @@
 use crate::*;
-use std::{cmp::Ordering, ops::Range};
 
 #[derive(Debug)]
 struct MapEntry {
@@ -54,7 +53,7 @@ impl Map {
             Ok(i) => i,
             Err(i) => match self.entries.get(i) {
                 Some(entry) => {
-                    let len = (entry.range.start).min(kend) - kstart;
+                    let len = min(entry.range.start, kend) - kstart;
                     ranges.push(kstart..kstart + len);
                     kstart += len;
                     i
@@ -69,14 +68,14 @@ impl Map {
         while i < self.entries.len() && kstart < kend {
             let entry = &self.entries[i];
             let vstart = entry.mapped(kstart).expect("invalid state");
-            let len = (entry.range.end).min(kend) - kstart;
+            let len = min(entry.range.end, kend) - kstart;
             ranges.push(vstart..vstart + len);
             kstart += len;
 
             i += 1;
 
             let len = match self.entries.get(i) {
-                Some(entry) => (entry.range.start).min(kend) - kstart,
+                Some(entry) => min(entry.range.start, kend) - kstart,
                 None => kend - kstart,
             };
             ranges.push(kstart..kstart + len);
@@ -104,9 +103,9 @@ impl MapChain {
 }
 
 fn parse_map_chain(input: &str) -> Result<MapChain> {
-    input.split("\n\n").try_fold(
-        MapChain { maps: Vec::new() },
-        |mut map_chain, part| -> Result<_> {
+    input
+        .split("\n\n")
+        .try_fold(MapChain { maps: Vec::new() }, |mut map_chain, part| {
             let lines = &mut part.lines();
             match lines.next() {
                 Some(line) if line.ends_with("map:") => {
@@ -119,14 +118,13 @@ fn parse_map_chain(input: &str) -> Result<MapChain> {
                                 _ => bail!("invalid line: {}", line),
                             }
                         })
-                        .collect::<Result<_>>()?;
+                        .try_collect()?;
                     map_chain.maps.push(Map::new(entries));
                     Ok(map_chain)
                 }
                 _ => bail!("invalid part: {}", part),
             }
-        },
-    )
+        })
 }
 
 fn parse_seeds(input: &str) -> Result<impl Iterator<Item = Result<usize, std::num::ParseIntError>> + '_> {
@@ -142,7 +140,7 @@ fn part1(input: &str) -> Result<usize> {
 
     let mut min_loc = usize::MAX;
     for seed in parse_seeds(seeds)? {
-        min_loc = min_loc.min(map_chain.mapped(seed?));
+        min_loc = min(min_loc, map_chain.mapped(seed?));
     }
     Ok(min_loc)
 }
@@ -155,7 +153,7 @@ fn part2(input: &str) -> Result<usize> {
     for [start, count] in parse_seeds(seeds)?.array_chunks() {
         let (start, count) = (start?, count?);
         for range in map_chain.mapped_ranges(start..start + count) {
-            min_loc = min_loc.min(range.start);
+            min_loc = min(min_loc, range.start);
         }
     }
     Ok(min_loc)

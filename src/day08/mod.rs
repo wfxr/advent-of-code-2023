@@ -1,5 +1,4 @@
 use crate::*;
-use std::collections::HashMap;
 
 fn name_to_id(name: &str) -> u32 {
     name.bytes().fold(0, |acc, c| acc * 26 + (c - b'A') as u32)
@@ -22,7 +21,7 @@ fn parse_input(input: &str) -> Result<(&str, Network)> {
                 _ => bail!("invalid node: {}", line),
             }
         })
-        .collect::<Result<_>>()?;
+        .try_collect()?;
     Ok((dirs, network))
 }
 

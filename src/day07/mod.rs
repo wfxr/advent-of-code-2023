@@ -1,5 +1,4 @@
 use crate::*;
-use std::cmp::Reverse;
 
 #[rustfmt::skip]
 fn compute_rank(s: &str, jocker: bool) -> Result<u32> {
@@ -36,13 +35,13 @@ fn cards_rank(cards: &[u8; 5]) -> u32 {
 fn solve(input: &str, jocker: bool) -> Result<usize> {
     let mut hands: Vec<_> = input
         .lines()
-        .map(|line| {
+        .map(|line| -> Result<_> {
             let (hand, bid) = line.split_once(' ').ok_or_else(|| anyhow!("Invalid hand: {}", line))?;
             let bid: usize = bid.parse().map_err(|e| anyhow!("Invalid bid: {}", e))?;
             let rank = compute_rank(hand, jocker)?;
             Ok((rank, bid))
         })
-        .collect::<Result<_>>()?;
+        .try_collect()?;
     hands.sort_unstable();
     Ok(hands.into_iter().zip(1..).map(|((_, bid), i)| bid * i).sum())
 }

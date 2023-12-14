@@ -1,5 +1,4 @@
 use crate::*;
-use std::collections::HashMap;
 
 struct Grid<'a> {
     data:  Vec<&'a [u8]>,
@@ -16,7 +15,7 @@ const ADJS: &[(isize, isize)] = &[
 
 impl<'a> Grid<'a> {
     fn new(input: &'a str) -> Result<Self> {
-        let data = input.lines().map(|line| line.as_bytes()).collect::<Vec<_>>();
+        let data = input.lines().map(|line| line.as_bytes()).collect_vec();
         let nrows = data.len();
         let ncols = data.first().ok_or_else(|| anyhow!("empty input"))?.len();
         for (i, row) in data.iter().enumerate() {

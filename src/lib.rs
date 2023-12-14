@@ -1,7 +1,8 @@
 #![feature(iter_intersperse)]
+#![feature(iter_array_chunks)]
+#![feature(iterator_try_collect)]
 #![feature(array_windows)]
 #![feature(extract_if)]
-#![feature(iter_array_chunks)]
 #![feature(test)]
 #![allow(clippy::get_first)]
 extern crate test;
@@ -22,7 +23,15 @@ crate::aoc!(
     day08,
 ); // +SOLUTIONS+
 
+pub use std::{
+    cmp::{max, min, Ordering, Reverse},
+    collections::{HashMap, HashSet},
+    ops::Range,
+    str::FromStr,
+};
+
 pub use anyhow::{anyhow, bail, ensure, Error, Result};
+pub use itertools::Itertools;
 
 pub struct Solution {
     pub part1: fn(&str) -> Result<String>,

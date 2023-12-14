@@ -1,5 +1,4 @@
 use crate::*;
-use std::str::FromStr;
 
 struct Cubes {
     r: usize,
@@ -44,7 +43,7 @@ impl FromStr for Game {
             .next()
             .ok_or_else(|| anyhow!("Invalid game: {value}"))?
             .parse()?;
-        let sets = sets.split(';').map(|s| s.parse()).collect::<Result<_, _>>()?;
+        let sets = sets.split(';').map(|s| s.parse()).try_collect()?;
         Ok(Self { round, sets })
     }
 }
@@ -67,7 +66,7 @@ fn part2(input: &str) -> Result<usize> {
             Game::from_str(line).map(|game| {
                 game.sets
                     .iter()
-                    .fold([0, 0, 0], |[r, g, b], s| [r.max(s.r), g.max(s.g), b.max(s.b)])
+                    .fold([0, 0, 0], |[r, g, b], s| [max(r, s.r), max(g, s.g), max(b, s.b)])
                     .iter()
                     .product::<usize>()
             })
@@ -88,6 +87,5 @@ mod tests {
     "};
 
     crate::test!(part1, t1: EXAMPLE => 8);
-
     crate::test!(part2, t1: EXAMPLE => 2286);
 }

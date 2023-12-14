@@ -8,13 +8,13 @@ fn part1(input: &str) -> Result<usize> {
         .ok_or_else(|| anyhow!("invalid time: {}", time))?
         .split_whitespace()
         .map(|s| s.parse())
-        .collect::<Result<_, _>>()?;
+        .try_collect()?;
     let dis: Vec<usize> = dis
         .strip_prefix("Distance:")
         .ok_or_else(|| anyhow!("invalid distance: {}", dis))?
         .split_whitespace()
         .map(|s| s.parse())
-        .collect::<Result<_, _>>()?;
+        .try_collect()?;
 
     let res = time
         .into_iter()

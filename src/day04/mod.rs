@@ -1,5 +1,4 @@
 use crate::*;
-use std::collections::HashSet;
 
 fn part1(input: &str) -> Result<usize> {
     my_won(input)
@@ -9,7 +8,7 @@ fn part1(input: &str) -> Result<usize> {
 }
 
 fn part2(input: &str) -> Result<usize> {
-    let w: Vec<_> = my_won(input).collect::<Result<_, _>>()?;
+    let w: Vec<_> = my_won(input).try_collect()?;
     let mut cards = vec![1usize; w.len()];
 
     for i in 0..w.len() {
@@ -26,12 +25,9 @@ fn my_won(input: &str) -> impl Iterator<Item = Result<u32>> + '_ {
         let mut parts = line.split(|c| c == ':' || c == '|').skip(1);
         match (parts.next(), parts.next(), parts.next()) {
             (Some(wins), Some(mine), None) => {
-                let wins: HashSet<usize> = wins
-                    .split_ascii_whitespace()
-                    .map(|n| n.parse::<usize>())
-                    .collect::<Result<_, _>>()?;
+                let wins: HashSet<usize> = wins.split_ascii_whitespace().map(|n| n.parse()).try_collect()?;
                 mine.split_ascii_whitespace()
-                    .map(|n| n.parse::<usize>())
+                    .map(|n| n.parse())
                     .try_fold(0, |acc, num| Ok(acc + wins.contains(&num?) as u32))
             }
             _ => bail!("Invalid input: {}", line),
