@@ -1,15 +1,14 @@
+use crate::*;
 use std::collections::HashSet;
 
-use crate::{solution, AocResult};
-
-fn part1(input: &str) -> AocResult<usize> {
+fn part1(input: &str) -> Result<usize> {
     my_won(input)
         .filter(|n| matches!(n, Ok(n) if *n > 0))
         .map(|n| n.map(|n| 2usize.pow(n - 1)))
         .sum()
 }
 
-fn part2(input: &str) -> AocResult<usize> {
+fn part2(input: &str) -> Result<usize> {
     let w: Vec<_> = my_won(input).collect::<Result<_, _>>()?;
     let mut cards = vec![1usize; w.len()];
 
@@ -22,7 +21,7 @@ fn part2(input: &str) -> AocResult<usize> {
     Ok(cards.into_iter().sum::<usize>())
 }
 
-fn my_won(input: &str) -> impl Iterator<Item = AocResult<u32>> + '_ {
+fn my_won(input: &str) -> impl Iterator<Item = Result<u32>> + '_ {
     input.lines().map(|line| {
         let mut parts = line.split(|c| c == ':' || c == '|').skip(1);
         match (parts.next(), parts.next(), parts.next()) {
@@ -35,7 +34,7 @@ fn my_won(input: &str) -> impl Iterator<Item = AocResult<u32>> + '_ {
                     .map(|n| n.parse::<usize>())
                     .try_fold(0, |acc, num| Ok(acc + wins.contains(&num?) as u32))
             }
-            _ => Err(format!("Invalid input: {}", line).into()),
+            _ => bail!("Invalid input: {}", line),
         }
     })
 }

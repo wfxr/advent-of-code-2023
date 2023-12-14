@@ -1,17 +1,17 @@
-use crate::{solution, AocResult};
+use crate::*;
 
-fn part1(input: &str) -> AocResult<usize> {
-    let (time, dis) = input.split_once('\n').ok_or("invalid input")?;
+fn part1(input: &str) -> Result<usize> {
+    let (time, dis) = input.split_once('\n').ok_or_else(|| anyhow!("invalid input"))?;
 
     let time: Vec<usize> = time
         .strip_prefix("Time:")
-        .ok_or(format!("invalid time: {}", time))?
+        .ok_or_else(|| anyhow!("invalid time: {}", time))?
         .split_whitespace()
         .map(|s| s.parse())
         .collect::<Result<_, _>>()?;
     let dis: Vec<usize> = dis
         .strip_prefix("Distance:")
-        .ok_or(format!("invalid distance: {}", dis))?
+        .ok_or_else(|| anyhow!("invalid distance: {}", dis))?
         .split_whitespace()
         .map(|s| s.parse())
         .collect::<Result<_, _>>()?;
@@ -25,18 +25,18 @@ fn part1(input: &str) -> AocResult<usize> {
     Ok(res)
 }
 
-fn part2(input: &str) -> AocResult<usize> {
-    let (time, dis) = input.split_once('\n').ok_or("invalid input")?;
+fn part2(input: &str) -> Result<usize> {
+    let (time, dis) = input.split_once('\n').ok_or_else(|| anyhow!("invalid input"))?;
 
     let time: usize = time
         .strip_prefix("Time:")
-        .ok_or(format!("invalid time: {}", time))?
+        .ok_or_else(|| anyhow!("invalid time: {}", time))?
         .bytes()
         .filter(|c| c.is_ascii_digit())
         .fold(0, |acc, c| acc * 10 + (c - b'0') as usize);
     let dis: usize = dis
         .strip_prefix("Distance:")
-        .ok_or(format!("invalid distance: {}", dis))?
+        .ok_or_else(|| anyhow!("invalid distance: {}", dis))?
         .bytes()
         .filter(|c| c.is_ascii_digit())
         .fold(0, |acc, c| acc * 10 + (c - b'0') as usize);

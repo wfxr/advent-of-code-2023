@@ -22,10 +22,10 @@ crate::aoc!(
     day08,
 ); // +SOLUTIONS+
 
-pub type AocResult<T> = std::result::Result<T, Box<dyn std::error::Error>>;
+pub use anyhow::{anyhow, bail, ensure, Error, Result};
 
 pub struct Solution {
-    pub part1: fn(&str) -> AocResult<String>,
-    pub part2: fn(&str) -> AocResult<String>,
+    pub part1: fn(&str) -> Result<String>,
+    pub part2: fn(&str) -> Result<String>,
     pub input: &'static str,
 }

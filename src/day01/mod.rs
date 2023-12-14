@@ -1,6 +1,6 @@
-use crate::{solution, AocResult};
+use crate::*;
 
-fn resolve<F1, F2>(input: &str, first_digit: F1, last_digit: F2) -> AocResult<usize>
+fn resolve<F1, F2>(input: &str, first_digit: F1, last_digit: F2) -> Result<usize>
 where
     F1: Fn(&str) -> Option<usize>,
     F2: Fn(&str) -> Option<usize>,
@@ -9,13 +9,12 @@ where
         .lines()
         .map(|line| match (first_digit(line), last_digit(line)) {
             (Some(first), Some(last)) => Ok(first * 10 + last),
-            _ => Err(format!("Invalid input: {}", line)),
+            _ => bail!("Invalid input: {}", line),
         })
-        .sum::<Result<usize, _>>()
-        .map_err(|e| e.into())
+        .sum::<Result<usize>>()
 }
 
-fn part1(input: &str) -> AocResult<usize> {
+fn part1(input: &str) -> Result<usize> {
     resolve(
         input,
         |line| line.bytes().find(|b| b.is_ascii_digit()).map(|b| (b - b'0') as usize),
@@ -23,7 +22,7 @@ fn part1(input: &str) -> AocResult<usize> {
     )
 }
 
-fn part2(input: &str) -> AocResult<usize> {
+fn part2(input: &str) -> Result<usize> {
     resolve(input, |line| find_digit(line, false), |line| find_digit(line, true))
 }
 

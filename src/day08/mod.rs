@@ -1,6 +1,5 @@
+use crate::*;
 use std::collections::HashMap;
-
-use crate::{solution, AocResult};
 
 fn name_to_id(name: &str) -> u32 {
     name.bytes().fold(0, |acc, c| acc * 26 + (c - b'A') as u32)
@@ -8,8 +7,8 @@ fn name_to_id(name: &str) -> u32 {
 
 type Network = HashMap<u32, (u32, u32)>;
 
-fn parse_input(input: &str) -> AocResult<(&str, Network)> {
-    let (dirs, nodes) = input.split_once("\n\n").ok_or("invalid input")?;
+fn parse_input(input: &str) -> Result<(&str, Network)> {
+    let (dirs, nodes) = input.split_once("\n\n").ok_or_else(|| anyhow!("invalid input"))?;
 
     let network: Network = nodes
         .lines()
@@ -20,14 +19,14 @@ fn parse_input(input: &str) -> AocResult<(&str, Network)> {
                 .map(name_to_id);
             match (it.next(), it.next(), it.next(), it.next()) {
                 (Some(name), Some(left), Some(right), None) => Ok((name, (left, right))),
-                _ => Err(format!("invalid node: {}", line)),
+                _ => bail!("invalid node: {}", line),
             }
         })
-        .collect::<Result<_, _>>()?;
+        .collect::<Result<_>>()?;
     Ok((dirs, network))
 }
 
-fn part1(input: &str) -> AocResult<usize> {
+fn part1(input: &str) -> Result<usize> {
     let (dirs, network) = parse_input(input)?;
 
     let dest = name_to_id("ZZZ");
@@ -38,7 +37,7 @@ fn part1(input: &str) -> AocResult<usize> {
         curr = match dir {
             'L' => left,
             'R' => right,
-            _ => return Err(format!("invalid direction: {}", dir).into()),
+            _ => bail!("invalid direction: {}", dir),
         };
 
         if curr == dest {
@@ -49,7 +48,7 @@ fn part1(input: &str) -> AocResult<usize> {
     unreachable!()
 }
 
-fn part2(input: &str) -> AocResult<usize> {
+fn part2(input: &str) -> Result<usize> {
     let (dirs, network) = parse_input(input)?;
 
     let mut currs: Vec<_> = network.keys().copied().filter(|&id| id % 26 == 0).collect();
@@ -61,7 +60,7 @@ fn part2(input: &str) -> AocResult<usize> {
             *curr = match dir {
                 'L' => left,
                 'R' => right,
-                _ => return Err(format!("invalid direction: {}", dir).into()),
+                _ => bail!("invalid direction: {}", dir),
             };
 
             if *curr % 26 == 25 {

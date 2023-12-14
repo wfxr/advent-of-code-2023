@@ -1,6 +1,5 @@
+use crate::*;
 use std::collections::HashMap;
-
-use crate::{solution, AocResult};
 
 struct Grid<'a> {
     data:  Vec<&'a [u8]>,
@@ -16,13 +15,13 @@ const ADJS: &[(isize, isize)] = &[
 ];
 
 impl<'a> Grid<'a> {
-    fn new(input: &'a str) -> AocResult<Self> {
+    fn new(input: &'a str) -> Result<Self> {
         let data = input.lines().map(|line| line.as_bytes()).collect::<Vec<_>>();
         let nrows = data.len();
-        let ncols = data.first().ok_or("empty input")?.len();
+        let ncols = data.first().ok_or_else(|| anyhow!("empty input"))?.len();
         for (i, row) in data.iter().enumerate() {
             if row.len() != ncols {
-                return Err(format!("rows have different lengths at row {}: {} != {}", i, row.len(), ncols).into());
+                bail!("rows have different lengths at row {}: {} != {}", i, row.len(), ncols);
             }
         }
         Ok(Self { data, nrows, ncols })
@@ -70,7 +69,7 @@ impl<'a> Grid<'a> {
     }
 }
 
-fn part1(input: &str) -> AocResult<usize> {
+fn part1(input: &str) -> Result<usize> {
     let grid = Grid::new(input)?;
 
     let mut sum = 0;
@@ -99,7 +98,7 @@ fn part1(input: &str) -> AocResult<usize> {
     Ok(sum)
 }
 
-fn part2(input: &str) -> AocResult<usize> {
+fn part2(input: &str) -> Result<usize> {
     let grid = Grid::new(input)?;
 
     let sum = (0..grid.nrows)

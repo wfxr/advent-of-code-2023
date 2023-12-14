@@ -1,9 +1,8 @@
+use crate::*;
 use std::cmp::Reverse;
 
-use crate::{solution, AocResult};
-
 #[rustfmt::skip]
-fn compute_rank(s: &str, jocker: bool) -> AocResult<u32> {
+fn compute_rank(s: &str, jocker: bool) -> Result<u32> {
     let mut cards = [0; 5];
     for (i, c) in s.chars().enumerate() {
         cards[i] = match c {
@@ -13,7 +12,7 @@ fn compute_rank(s: &str, jocker: bool) -> AocResult<u32> {
             'Q' => 12,
             'K' => 13,
             'A' => 14,
-            _ => return Err(format!("Invalid card: {}", c).into()),
+            _ => bail!("Invalid card: {}", c),
         };
     }
     Ok(cards_rank(&cards))
@@ -34,25 +33,25 @@ fn cards_rank(cards: &[u8; 5]) -> u32 {
     kind * 15u32.pow(5) + rank
 }
 
-fn solve(input: &str, jocker: bool) -> AocResult<usize> {
+fn solve(input: &str, jocker: bool) -> Result<usize> {
     let mut hands: Vec<_> = input
         .lines()
         .map(|line| {
-            let (hand, bid) = line.split_once(' ').ok_or_else(|| format!("Invalid hand: {}", line))?;
-            let bid: usize = bid.parse().map_err(|e| format!("Invalid bid: {}", e))?;
+            let (hand, bid) = line.split_once(' ').ok_or_else(|| anyhow!("Invalid hand: {}", line))?;
+            let bid: usize = bid.parse().map_err(|e| anyhow!("Invalid bid: {}", e))?;
             let rank = compute_rank(hand, jocker)?;
             Ok((rank, bid))
         })
-        .collect::<AocResult<_>>()?;
+        .collect::<Result<_>>()?;
     hands.sort_unstable();
     Ok(hands.into_iter().zip(1..).map(|((_, bid), i)| bid * i).sum())
 }
 
-fn part1(input: &str) -> AocResult<usize> {
+fn part1(input: &str) -> Result<usize> {
     solve(input, false)
 }
 
-fn part2(input: &str) -> AocResult<usize> {
+fn part2(input: &str) -> Result<usize> {
     solve(input, true)
 }
 

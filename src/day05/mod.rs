@@ -1,6 +1,5 @@
+use crate::*;
 use std::{cmp::Ordering, ops::Range};
-
-use crate::{solution, AocResult};
 
 #[derive(Debug)]
 struct MapEntry {
@@ -104,10 +103,10 @@ impl MapChain {
     }
 }
 
-fn parse_map_chain(input: &str) -> AocResult<MapChain> {
-    input
-        .split("\n\n")
-        .try_fold(MapChain { maps: Vec::new() }, |mut map_chain, part| -> AocResult<_> {
+fn parse_map_chain(input: &str) -> Result<MapChain> {
+    input.split("\n\n").try_fold(
+        MapChain { maps: Vec::new() },
+        |mut map_chain, part| -> Result<_> {
             let lines = &mut part.lines();
             match lines.next() {
                 Some(line) if line.ends_with("map:") => {
@@ -117,27 +116,28 @@ fn parse_map_chain(input: &str) -> AocResult<MapChain> {
                             match (parts.next(), parts.next(), parts.next(), parts.next()) {
                                 (Some(dst), Some(src), Some(len), None) =>
                                     Ok(MapEntry::new(src.parse()?, dst.parse()?, len.parse()?)),
-                                _ => Err(format!("invalid line: {}", line))?,
+                                _ => bail!("invalid line: {}", line),
                             }
                         })
-                        .collect::<AocResult<_>>()?;
+                        .collect::<Result<_>>()?;
                     map_chain.maps.push(Map::new(entries));
                     Ok(map_chain)
                 }
-                _ => Err(format!("invalid part: {}", part))?,
+                _ => bail!("invalid part: {}", part),
             }
-        })
+        },
+    )
 }
 
-fn parse_seeds(input: &str) -> AocResult<impl Iterator<Item = Result<usize, std::num::ParseIntError>> + '_> {
+fn parse_seeds(input: &str) -> Result<impl Iterator<Item = Result<usize, std::num::ParseIntError>> + '_> {
     match input.strip_prefix("seeds:") {
         Some(seeds) => Ok(seeds.split_ascii_whitespace().map(|s| s.parse())),
-        None => Err(format!("invalid seeds: {}", input))?,
+        None => bail!("invalid seeds: {}", input),
     }
 }
 
-fn part1(input: &str) -> AocResult<usize> {
-    let (seeds, map_chain) = input.split_once("\n\n").ok_or("invalid input")?;
+fn part1(input: &str) -> Result<usize> {
+    let (seeds, map_chain) = input.split_once("\n\n").ok_or_else(|| anyhow!("invalid input"))?;
     let map_chain = parse_map_chain(map_chain)?;
 
     let mut min_loc = usize::MAX;
@@ -147,8 +147,8 @@ fn part1(input: &str) -> AocResult<usize> {
     Ok(min_loc)
 }
 
-fn part2(input: &str) -> AocResult<usize> {
-    let (seeds, map_chain) = input.split_once("\n\n").ok_or("invalid input")?;
+fn part2(input: &str) -> Result<usize> {
+    let (seeds, map_chain) = input.split_once("\n\n").ok_or_else(|| anyhow!("invalid input"))?;
     let map_chain = parse_map_chain(map_chain)?;
 
     let mut min_loc = usize::MAX;

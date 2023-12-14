@@ -1,10 +1,10 @@
-use crate::{solution, AocResult};
+use crate::*;
 
-fn part1(_input: &str) -> AocResult<usize> {
+fn part1(_input: &str) -> Result<usize> {
     todo!()
 }
 
-fn part2(_input: &str) -> AocResult<usize> {
+fn part2(_input: &str) -> Result<usize> {
     todo!()
 }
 

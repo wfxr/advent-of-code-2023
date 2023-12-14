@@ -5,3 +5,6 @@ authors = ["Wenxuan Zhang <wenxuangm@gmail.com>"]
 edition = "2021"
 
 [dependencies]
+anyhow = "1"
+indoc = "2"
+itertools = "0"

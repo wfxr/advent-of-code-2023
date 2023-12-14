@@ -2,10 +2,11 @@
 
 I am trying to write the solutions
 
-- with error handling
 - without `unwrap`
 - without `unsafe`
-- without dependencies
+- with error handling
+- as fast as possible
+- as expressive as possible
 
 To run solutions:
 

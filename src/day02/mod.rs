@@ -1,6 +1,5 @@
+use crate::*;
 use std::str::FromStr;
-
-use crate::{solution, AocResult};
 
 struct Cubes {
     r: usize,
@@ -14,7 +13,7 @@ struct Game {
 }
 
 impl FromStr for Cubes {
-    type Err = Box<dyn std::error::Error>;
+    type Err = anyhow::Error;
 
     fn from_str(value: &str) -> Result<Self, Self::Err> {
         let (mut r, mut g, mut b) = (0, 0, 0);
@@ -22,13 +21,13 @@ impl FromStr for Cubes {
             let mut it = s.trim().split(' ');
             let (n, color) = match (it.next(), it.next(), it.next()) {
                 (Some(n), Some(color), None) => (n.parse::<usize>()?, color),
-                _ => return Err(format!("Invalid cube: {s}").into()),
+                _ => bail!("Invalid cube: {s}"),
             };
             match color {
                 "red" => r += n,
                 "green" => g += n,
                 "blue" => b += n,
-                _ => return Err(format!("Invalid cube: {s}").into()),
+                _ => bail!("Invalid cube: {s}"),
             }
         }
         Ok(Self { r, g, b })
@@ -36,21 +35,21 @@ impl FromStr for Cubes {
 }
 
 impl FromStr for Game {
-    type Err = Box<dyn std::error::Error>;
+    type Err = anyhow::Error;
 
     fn from_str(value: &str) -> Result<Self, Self::Err> {
-        let (round, sets) = value.split_once(": ").ok_or_else(|| format!("Invalid game: {value}"))?;
+        let (round, sets) = value.split_once(": ").ok_or_else(|| anyhow!("Invalid game: {value}"))?;
         let round = round
             .rsplit(' ')
             .next()
-            .ok_or_else(|| format!("Invalid game: {value}"))?
+            .ok_or_else(|| anyhow!("Invalid game: {value}"))?
             .parse()?;
         let sets = sets.split(';').map(|s| s.parse()).collect::<Result<_, _>>()?;
         Ok(Self { round, sets })
     }
 }
 
-fn part1(input: &str) -> AocResult<usize> {
+fn part1(input: &str) -> Result<usize> {
     input.lines().try_fold(0, |mut acc, line| {
         Game::from_str(line).map(|game| {
             if game.sets.iter().all(|&Cubes { r, g, b }| r <= 12 && g <= 13 && b <= 14) {
@@ -61,7 +60,7 @@ fn part1(input: &str) -> AocResult<usize> {
     })
 }
 
-fn part2(input: &str) -> AocResult<usize> {
+fn part2(input: &str) -> Result<usize> {
     input
         .lines()
         .map(|line| {

@@ -1,4 +1,4 @@
-use aoc2023::{build_solutions, AocResult, Solution};
+use aoc2023::{build_solutions, Result, Solution};
 use std::time::{Duration, Instant};
 
 fn main() {
@@ -8,7 +8,7 @@ fn main() {
     }
 }
 
-fn try_main() -> AocResult<()> {
+fn try_main() -> Result<()> {
     let mut solutions = build_solutions();
     if let Some(idx) = std::env::args().nth(1) {
         solutions.retain(|k, _| *k == idx)
