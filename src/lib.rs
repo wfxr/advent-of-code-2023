@@ -21,6 +21,7 @@ crate::aoc!(
     day06,
     day07,
     day08,
+    day09,
 ); // +SOLUTIONS+
 
 pub use std::{
