@@ -1,19 +1,20 @@
 use crate::*;
 
+#[derive(Clone, Copy)]
 enum PredictMode {
     Forward,
     Backward,
 }
 
 fn part1(input: &str) -> Result<usize> {
-    solve(input, &PredictMode::Forward)
+    solve(input, PredictMode::Forward)
 }
 
 fn part2(input: &str) -> Result<usize> {
-    solve(input, &PredictMode::Backward)
+    solve(input, PredictMode::Backward)
 }
 
-fn solve(input: &str, mode: &PredictMode) -> Result<usize> {
+fn solve(input: &str, mode: PredictMode) -> Result<usize> {
     let res = input
         .lines()
         .map(|line| {
@@ -25,7 +26,7 @@ fn solve(input: &str, mode: &PredictMode) -> Result<usize> {
     Ok(res)
 }
 
-fn predict(history: &[i32], mode: &PredictMode) -> Result<i32> {
+fn predict(history: &[i32], mode: PredictMode) -> Result<i32> {
     let diff = history.array_windows().map(|[a, b]| b - a).collect_vec();
     let diff = match diff.iter().all_equal_value() {
         Ok(&x) => x,
