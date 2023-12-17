@@ -1,42 +1,36 @@
 use crate::*;
 
-#[derive(Clone, Copy)]
-enum PredictMode {
-    Forward,
-    Backward,
-}
-
 fn part1(input: &str) -> Result<usize> {
-    solve(input, PredictMode::Forward)
+    solve(input, false)
 }
 
 fn part2(input: &str) -> Result<usize> {
-    solve(input, PredictMode::Backward)
+    solve(input, true)
 }
 
-fn solve(input: &str, mode: PredictMode) -> Result<usize> {
-    let res = input
+fn solve(input: &str, reverse: bool) -> Result<usize> {
+    input
         .lines()
         .map(|line| {
-            let history: Vec<_> = line.split_ascii_whitespace().map(|n| n.parse()).try_collect()?;
-            predict(&history, mode)
+            let iter = line.split_ascii_whitespace().map(|n| n.parse());
+            let history: Vec<_> = match reverse {
+                true => iter.rev().try_collect()?,
+                false => iter.try_collect()?,
+            };
+            predict(&history)
         })
-        .sum::<Result<i32>>()?
-        .try_into()?;
-    Ok(res)
+        .sum::<Result<i32>>()
+        .and_then(|x| usize::try_from(x).map_err(Into::into))
 }
 
-fn predict(history: &[i32], mode: PredictMode) -> Result<i32> {
+fn predict(history: &[i32]) -> Result<i32> {
     let diff = history.array_windows().map(|[a, b]| b - a).collect_vec();
     let diff = match diff.iter().all_equal_value() {
         Ok(&x) => x,
-        Err(Some(..)) => predict(&diff, mode)?,
+        Err(Some(..)) => predict(&diff)?,
         Err(None) => bail!("history should have at least 2 elements"),
     };
-    match mode {
-        PredictMode::Forward => Ok(history[history.len() - 1] + diff),
-        PredictMode::Backward => Ok(history[0] - diff),
-    }
+    Ok(history[history.len() - 1] + diff)
 }
 
 solution!(part1 => 1868368343, part2 => 1022);
