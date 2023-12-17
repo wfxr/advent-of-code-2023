@@ -21,13 +21,15 @@ dependencies = ["clean"]
 script = '''
 #!/usr/bin/env bash
 [ -n "$(git status --porcelain)" ] && echo "abort: working directory is not clean" && exit 1
-mod="$1"
+day=$(printf "%02d" $1)
+mod="day$day"
 dir="src/$mod"
 main() {
     [ -d $dir ] && echo "abort: $dir already exists." && return 1
     cp -r templates "$dir"
     sed -i "/+SOLUTIONS+/i \    $mod," src/lib.rs
     cargo fmt
+    aoc download --input-only --overwrite --day $day --input-file $dir/input
 }; main; ARG=$?
 if [ $ARG -ne 0 ]; then
     git clean -q -f $dir
