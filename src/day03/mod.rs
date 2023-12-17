@@ -17,12 +17,10 @@ impl<'a> Grid<'a> {
     fn new(input: &'a str) -> Result<Self> {
         let data = input.lines().map(|line| line.as_bytes()).collect_vec();
         let nrows = data.len();
-        let ncols = data.first().ok_or_else(|| anyhow!("empty input"))?.len();
-        for (i, row) in data.iter().enumerate() {
-            if row.len() != ncols {
-                bail!("rows have different lengths at row {}: {} != {}", i, row.len(), ncols);
-            }
-        }
+        let ncols = match data.iter().map(|row| row.len()).all_equal_value() {
+            Ok(ncols) => ncols,
+            _ => bail!("invalid input"),
+        };
         Ok(Self { data, nrows, ncols })
     }
 
