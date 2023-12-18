@@ -11,7 +11,6 @@ struct Maze<'a> {
     grids: Vec<&'a [u8]>,
     nrows: usize,
     ncols: usize,
-    start: (usize, usize),
 }
 
 impl<'a> Maze<'a> {
@@ -19,74 +18,75 @@ impl<'a> Maze<'a> {
         (row < self.nrows && col < self.ncols).then(|| self.grids[row][col])
     }
 
-    fn route(&self, mut pos: (usize, usize), mut dir: Direction) -> Option<usize> {
-        let mut steps = 1;
-        while pos != self.start {
-            dir = match (dir, self.get(pos)?) {
-                (L, b'F') | (R, b'7') | (D, b'|') => D,
-                (R, b'J') | (L, b'L') | (U, b'|') => U,
-                (U, b'F') | (D, b'L') | (R, b'-') => R,
-                (U, b'7') | (D, b'J') | (L, b'-') => L,
-                _ => return None,
-            };
-            steps += 1;
-            pos = forward(pos, dir);
-        }
-        Some(steps)
+    fn loop_length(&self, start: (usize, usize)) -> Option<usize> {
+        DIRS.iter().find_map(|&dir| {
+            let (mut dir, mut pos, mut steps) = (dir, start, 0);
+            loop {
+                pos = forward(pos, dir);
+                steps += 1;
+                if pos == start {
+                    break;
+                }
+
+                dir = match (dir, self.get(pos)?) {
+                    (L, b'F') | (R, b'7') | (D, b'|') => D,
+                    (R, b'J') | (L, b'L') | (U, b'|') => U,
+                    (U, b'F') | (D, b'L') | (R, b'-') => R,
+                    (U, b'7') | (D, b'J') | (L, b'-') => L,
+                    _ => None?,
+                };
+            }
+            Some(steps)
+        })
     }
 
-    fn count_enclosed(&self, mut pos: (usize, usize), mut dir: Direction) -> Option<usize> {
-        let mut grids = vec![vec![b'I'; self.ncols * 2]; self.nrows * 2];
-        grids[pos.0 * 2][pos.1 * 2] = b'#';
+    fn loop_enclosed(&self, start: (usize, usize)) -> Option<usize> {
+        DIRS.iter().find_map(|&dir| {
+            let (mut dir, mut pos) = (dir, start);
+            let mut grids = vec![vec![b'I'; self.ncols * 2]; self.nrows * 2];
 
-        let interpos = match (-dir.0, -dir.1) {
-            L => (pos.0 * 2, pos.1 * 2 - 1),
-            R => (pos.0 * 2, pos.1 * 2 + 1),
-            U => (pos.0 * 2 - 1, pos.1 * 2),
-            D => (pos.0 * 2 + 1, pos.1 * 2),
-            _ => unreachable!(),
-        };
-        grids[interpos.0][interpos.1] = b'#';
+            loop {
+                grids[pos.0 * 2][pos.1 * 2] = b'#';
+                let interpos = match dir {
+                    L => (pos.0 * 2, pos.1 * 2 - 1),
+                    R => (pos.0 * 2, pos.1 * 2 + 1),
+                    U => (pos.0 * 2 - 1, pos.1 * 2),
+                    D => (pos.0 * 2 + 1, pos.1 * 2),
+                    _ => unreachable!(),
+                };
+                grids[interpos.0][interpos.1] = b'#';
 
-        while pos != self.start {
-            dir = match (dir, self.get(pos)?) {
-                (L, b'F') | (R, b'7') | (D, b'|') => D,
-                (R, b'J') | (L, b'L') | (U, b'|') => U,
-                (U, b'F') | (D, b'L') | (R, b'-') => R,
-                (U, b'7') | (D, b'J') | (L, b'-') => L,
-                _ => return None,
-            };
-            let interpos = match dir {
-                L => (pos.0 * 2, pos.1 * 2 - 1),
-                R => (pos.0 * 2, pos.1 * 2 + 1),
-                U => (pos.0 * 2 - 1, pos.1 * 2),
-                D => (pos.0 * 2 + 1, pos.1 * 2),
-                _ => unreachable!(),
-            };
-            grids[interpos.0][interpos.1] = b'#';
-            pos = forward(pos, dir);
-            grids[pos.0 * 2][pos.1 * 2] = b'#';
-        }
+                pos = forward(pos, dir);
+                if pos == start {
+                    break;
+                }
 
-        for (r, c) in (0..self.nrows * 2)
-            .cartesian_product([0, self.ncols * 2 - 1])
-            .chain([0, self.nrows * 2 - 1].into_iter().cartesian_product(0..self.ncols * 2))
-        {
-            dfs(&mut grids, r, c);
-        }
+                dir = match (dir, self.get(pos)?) {
+                    (L, b'F') | (R, b'7') | (D, b'|') => D,
+                    (R, b'J') | (L, b'L') | (U, b'|') => U,
+                    (U, b'F') | (D, b'L') | (R, b'-') => R,
+                    (U, b'7') | (D, b'J') | (L, b'-') => L,
+                    _ => None?,
+                };
+            }
 
-        Some(
+            (0..self.nrows * 2)
+                .cartesian_product([0, self.ncols * 2 - 1])
+                .chain([0, self.nrows * 2 - 1].into_iter().cartesian_product(0..self.ncols * 2))
+                .for_each(|pos| dfs(&mut grids, pos));
+
             grids
                 .into_iter()
                 .step_by(2)
                 .flat_map(|row| row.into_iter().step_by(2))
                 .filter(|&x| x == b'I')
-                .count(),
-        )
+                .count()
+                .into()
+        })
     }
 }
 
-fn dfs(grids: &mut [Vec<u8>], row: usize, col: usize) {
+fn dfs(grids: &mut [Vec<u8>], (row, col): (usize, usize)) {
     if row >= grids.len() || col >= grids[row].len() || grids[row][col] != b'I' {
         return;
     }
@@ -94,7 +94,7 @@ fn dfs(grids: &mut [Vec<u8>], row: usize, col: usize) {
     grids[row][col] = b' ';
     DIRS.iter()
         .map(|&dir| forward((row, col), dir))
-        .for_each(|(row, col)| dfs(grids, row, col));
+        .for_each(|(row, col)| dfs(grids, (row, col)));
 }
 
 fn forward(pos: (usize, usize), dir: Direction) -> (usize, usize) {
@@ -114,14 +114,9 @@ fn part1(input: &str) -> Result<usize> {
         .find(|&(r, c)| grids[r][c] == b'S')
         .ok_or_else(|| anyhow!("no start found"))?;
 
-    let maze = Maze { grids, nrows, ncols, start };
+    let maze = Maze { grids, nrows, ncols };
 
-    let steps = [L, R, U, D]
-        .into_iter()
-        .find_map(|dir| maze.route(forward(start, dir), dir))
-        .ok_or_else(|| anyhow!("no loop found"))?;
-
-    Ok(steps / 2)
+    maze.loop_length(start).map(|n| n / 2).ok_or(anyhow!("no loop found"))
 }
 
 fn part2(input: &str) -> Result<usize> {
@@ -137,11 +132,9 @@ fn part2(input: &str) -> Result<usize> {
         .find(|&(i, j)| grids[i][j] == b'S')
         .ok_or_else(|| anyhow!("no start found"))?;
 
-    let maze = Maze { grids, nrows, ncols, start };
+    let maze = Maze { grids, nrows, ncols };
 
-    DIRS.iter()
-        .find_map(|&dir| maze.count_enclosed(forward(start, dir), dir))
-        .ok_or_else(|| anyhow!("no loop found"))
+    maze.loop_enclosed(start).ok_or(anyhow!("no loop found"))
 }
 
 solution!(part1 => 6778, part2 => 433);

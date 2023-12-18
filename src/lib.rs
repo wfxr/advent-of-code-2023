@@ -5,6 +5,7 @@
 #![feature(extract_if)]
 #![feature(test)]
 #![allow(clippy::get_first)]
+// #![deny(clippy::pedantic)]
 extern crate test;
 
 mod macros;
